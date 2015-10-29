@@ -46,13 +46,13 @@ func (this *TestModule) Construct(m *goldie.Module) {
 
 	// invoked before every module action
 	m.Before.Add(func(req *http.Request) goldie.Response {
-		log.Println("Before)
+		log.Println("Before")
 		return goldie.Response{}
 	})
 
 	// invoked after every module action
 	m.After.Add(func(r *goldie.Response) {
-		log.Println("After)
+		log.Println("After")
 	})
 
 	// registered with the path /test/spot
