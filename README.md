@@ -24,3 +24,44 @@ func main() {
 ## Supports
 * Model binding
 * Go Http templates
+
+## Modules
+Use modules to group related methods together and tie into the dependency injection system.
+
+```go
+package main
+
+import (
+	"github.com/jskrepnek/goldie"
+	"net/http"
+)
+
+type TestModule struct {
+}
+
+func (this *TestModule) Construct(m *goldie.Module) {
+
+	// the base route for all actions
+	m.Path = "/test"
+
+	// invoked before every module action
+	m.Before.Add(func(req *http.Request) goldie.Response {
+		log.Println("Before)
+		return goldie.Response{}
+	})
+
+	// invoked after every module action
+	m.After.Add(func(r *goldie.Response) {
+		log.Println("After)
+	})
+
+	// registered with the path /test/spot
+	m.Get["/spot"] = func() string {
+		return "spot"
+	}
+}
+
+func init() {
+	goldie.AddModule(&TestModule{})
+}
+```

@@ -69,11 +69,28 @@ func parseParameters(r *http.Request) url.Values {
 	return values
 }
 
+func newModuleHandler(module *Module, inner http.HandlerFunc) http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+
+		log.Printf("Module Handler: Executing %d Before hooks", len(module.Before))
+		for _, before := range module.Before {
+			before(req)
+		}
+
+		log.Println("Module Handler: Executing action handler")
+		inner(rw, req)
+
+		log.Printf("Module Handler: Executing %d After hooks", len(module.After))
+		for _, after := range module.After {
+			after(&Response{})
+		}
+	}
+}
+
 func newHandler(action Action) http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 
 		actionType := reflect.TypeOf(action)
-
 		args := []reflect.Value{}
 
 		for i := 0; i < actionType.NumIn(); i++ {
