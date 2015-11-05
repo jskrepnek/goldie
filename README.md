@@ -86,26 +86,35 @@ type Widget struct {
 func init() {
 
 	// bind to an integer
+	// GET /widget/123
 	goldie.Get["/widget/{id}"] = func(id int) Widget {
 		return repo.Get(id)
 	}
 
-	// bind from the query string to a string 
+	// bind from the query string to a string
+	// GET /widget?type=upright 
 	goldie.Get["/widget"] = func(type string) []Widget {
 		return repo.GetByType(type)
 	}
 
 	// bind to a struct from the request body
+	// POST /widget
+	// { "id":123, "type":"downright", "strength":44}
+	//
 	goldie.Post["/widget"] = func(widget Widget) Widget {
 		return repo.Add(widget)
 	}
 
 	// bind from a route variable and the request to a struct
+	// PUT /widget/123
+	// { "type":"downright", "strength":44}
 	goldie.Put["/widget/{id}"] = func(widget Widget) Widget {
 		return repo.Update(widget)
 	}
 
 	// bind from a route variable to a value type and the request body to a struct
+	// PUT /widget/123
+	// { "type":"downright", "strength":44}
 	goldie.Put["/widget/{id}"] = func(id int, widget Widget) Widget {
 		return repo.Update(id, widget)
 	}
