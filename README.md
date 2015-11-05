@@ -70,7 +70,7 @@ func init() {
 ## Model Binding
 Goldie will try to bind parameters from the route, query string, and request body.  Since Go does not retain function argument names during compliation, we can only
 reliably bind to a single value type.
-```
+```go
 package main
 
 import (
