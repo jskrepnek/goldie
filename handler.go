@@ -6,7 +6,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"html/template"
+	"io"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -28,7 +30,27 @@ func bindStruct(t reflect.Type, values url.Values) reflect.Value {
 	return n
 }
 
-func bindArgument(t reflect.Type, values url.Values) reflect.Value {
+func bindStructJson(t reflect.Type, values url.Values, b io.ReadCloser) reflect.Value {
+
+	s := bindStruct(t, values)
+
+	decoder := json.NewDecoder(b)
+	err := decoder.Decode(s.Addr().Interface())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return s
+}
+
+func bindArgument(t reflect.Type, req *http.Request) reflect.Value {
+
+	values := parseParameters(req)
+
+	// regardless of the type of request, primitives will only
+	// be bound from the route variables and query string
+
 	switch t.Kind() {
 	case reflect.String:
 		// will only bind directly when there's no ambiguity
@@ -47,11 +69,37 @@ func bindArgument(t reflect.Type, values url.Values) reflect.Value {
 			}
 		}
 		panic("binding multiple primitives to action not implemented")
+	}
+
+	contentType := req.Header.Get("Content-Type")
+	contentType, _, _ = mime.ParseMediaType(contentType)
+
+	switch t.Kind() {
 	case reflect.Struct:
-		return bindStruct(t, values)
+
+		// if it's a GET OR if it's a form encoded request, then everything
+		// to bind is captured in values
+
+		if req.Method == "GET" ||
+			contentType == "application/x-www-form-urlencoded" {
+			return bindStruct(t, values)
+		} else {
+
+			// if it's xml or json, then we need to bind from the
+			// query string, route variables, and the body
+
+			switch {
+			case contentType == "application/json":
+				return bindStructJson(t, values, req.Body)
+			default:
+				panic("not implemented")
+			}
+		}
+
 	default:
 		panic("in type not implemented")
 	}
+
 }
 
 func parseParameters(r *http.Request) url.Values {
@@ -94,7 +142,7 @@ func newHandler(action Action) http.HandlerFunc {
 		args := []reflect.Value{}
 
 		for i := 0; i < actionType.NumIn(); i++ {
-			args = append(args, bindArgument(actionType.In(i), parseParameters(req)))
+			args = append(args, bindArgument(actionType.In(i), req))
 		}
 
 		// invoke the action
